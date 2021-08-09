@@ -10,7 +10,7 @@ vIPW <- function(dat, regime_list){
     names(dat)[names(dat) == 'freq'] <- 'pi1'
     names(pi1_table) <- c('a1', 'n1', 'freq1')
 
-    pi2_table <- subset(dat, kappa == 1) %>%
+    pi2_table <- dat %>%
       count(a1, a2) %>%
       group_by(a1) %>%
       mutate(freq=n/sum(n))
@@ -87,8 +87,9 @@ vIPW <- function(dat, regime_list){
   Vn <- solve(An) %*% Bn %*% t(solve(An))
   Vn  ## the fourth diagonal is the variance of the ipw estimator vhat
 
-  return(list('value' = values,
-              'covariance' = Vn))
+  return(list('Values' = values,
+              'Covariance' = Vn,
+              'ns'= nrow(dat)))
 
 }
 
