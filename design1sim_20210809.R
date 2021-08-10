@@ -155,17 +155,28 @@ estimateAllMethod <- function(n, loopno, vp, regimes, steps, s2){
 
 estimateVariance <- function(n, loops, vp, regimes, steps, s2,
                              delta, out_location=NULL, cores=20){
+  print('Simulating data')
+  print(Sys.time())
+  # results <- list()
+  # for (i in 1:loops){
+  #   results[[i]] <- estimateAllMethod(n=n, loopno=i, vp=vp, regimes=regimes, steps=steps, s2=s2)
+  # }
   registerDoParallel(cores=cores)
-  results <- foreach(n=rep(n, loops), loopno=1:loops, regimes=rep(regimes, loops),
+
+  results <- foreach(n=rep(n, loops), loopno=c(1:loops), vp=rep(vp,loops),
+                     regimes=replicate(n=loops, expr=regimes, simplify = FALSE),
                      steps=rep(steps, loops), s2=rep(s2, loops)) %dopar% {
                        estimateAllMethod(n, loopno, vp, regimes, steps, s2)
                      }
-  rlist::list.save(res, file = paste0(out_location, "/varEstimateResults.Rdata"))
+  rlist::list.save(results, file = paste0(out_location, "/varEstimateResults.Rdata"))
+
+  print('Estimating the variance')
+  print(Sys.time())
 
   # list input should have structure [[seed]][[t1/t2]][[results from seed/time]]
   singleVar <- function(list, delta, out_location, mod){
     z1s <- lapply(list, function(x) (x$t1$value - delta)/x$t1$se)
-    z2s <- lapply(res, function(x) (x$t2$value - delta)/x$t2$se)
+    z2s <- lapply(list, function(x) (x$t2$value - delta)/x$t2$se)
     # find the covariance of the z1s, z2s
     zall <- cbind(matrix(unlist(z1s), byrow=TRUE, nrow=length(z1s)),
                   matrix(unlist(z2s), byrow=TRUE, nrow=length(z2s)))
@@ -197,8 +208,14 @@ main <- function(varest=TRUE, saveyn=TRUE, newdir=TRUE){
     toppath <- paste0(getwd(), '/sim_output/', Sys.Date())
     if(!dir.exists(toppath)){
       dir.create(toppath)
+      sendmailR::sendmail(from = '<design1>',
+                          to = '<cmansch@ncsu.edu>',
+                          subject = 'Server Update',
+                          msg = paste('Directory made successfully') )
     }
   }
+
+
   # estimate the variance of the data under each of the estimators
   if(varest){
     estimateVariance(n=nvar, loops=Bvar, vp=vpvar, regimes=regimes,
@@ -228,4 +245,4 @@ if(substr(getwd(), 2, 5) == 'home'){
 ## find the stopping boundaries and sample sizes
 
 
-##
+# this will actually run 5 different estimates, but it should be faster than it is
