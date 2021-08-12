@@ -357,9 +357,9 @@ simulationOnce <- function(maxN, allN, bounds, regimes, vp, loopno, s2, H0,
   ipw_dat_p_mid <- ipw_dat_p[ipw_dat_p$t3 <= t1,]
   nmid <- nrow(ipw_dat_p[ipw_dat_p$t1 <= t1,])  # how many individuals are there when we analyze t1
 
-  ipwres[['Pocock_Mid']] <- ipwSingle(ipw_dat_p, regimes, seed, 
+  ipwres[['Pocock_Mid']] <- ipwSingle(ipw_dat_p_mid, regimes, seed, 
                                       ipwBounds$Pocock$bound, truen=nmid)
-  ipwres[['Pocock_Fin']] <- ipwSingle(ipw_dat_p_mid, regimes, seed, 
+  ipwres[['Pocock_Fin']] <- ipwSingle(ipw_dat_p, regimes, seed, 
                                       ipwBounds$Pocock$bound, truen=nrow(ipw_dat_p))
   # did IPW reject early?
   # did it reject at least once?
@@ -377,9 +377,9 @@ simulationOnce <- function(maxN, allN, bounds, regimes, vp, loopno, s2, H0,
   ipw_dat_of_mid <- ipw_dat_of[ipw_dat_of$t3 <= t1,]
   nmid <- nrow(ipw_dat_of[ipw_dat_of$t1 <= t1,]) 
   
-  ipwres[['OF_Mid']] <- ipwSingle(ipw_dat_of, regimes, seed, 
+  ipwres[['OF_Mid']] <- ipwSingle(ipw_dat_of_mid, regimes, seed, 
                                       ipwBounds$OF$bound*sqrt(2), truen=nmid)
-  ipwres[['OF_Fin']] <- ipwSingle(ipw_dat_of_mid, regimes, seed, 
+  ipwres[['OF_Fin']] <- ipwSingle(ipw_dat_of, regimes, seed, 
                                       ipwBounds$OF$bound, truen=nrow(ipw_dat_of))
   # did IPW reject early?
   # did it reject at least once?
