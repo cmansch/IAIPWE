@@ -60,20 +60,24 @@ getdPsiPi <- function(df, p_fits){
   # general formula is given as eq 7.29 pg 319 Boos Stefanski
   # \sum_{i=1}^N gprime gprime^t - {(Y_i - g)g''}
   for (k in c(1:length(p_fits))){
+    
+    k_ind <- (df[,'kappa']>=k)*1
+    dfkm <- model.matrix(p_fits[[k]]@modelObj@model, data=df)
+    
     dpsi.pi_k <- Reduce("+", 
-                      lapply(X=1L:nrow(df), FUN = function(i) (df[i,'kappa']>=k) * 
-                               gprime(model.matrix(p_fits[[k]]@modelObj@model, data=df[i,]), 
-                                      p_fits[[k]]@fitObj$coefficients) %*% 
-                               t(gprime(model.matrix(p_fits[[k]]@modelObj@model, data=df[i,]), 
-                                        p_fits[[k]]@fitObj$coefficients)) 
-                             # remove because expectation is mean 0, and adds computational burden. 
-                             # - (df[i,'kappa']>=k) * {
-                             #   drop(df[,paste0('a',k)][i] - 
-                             #          g(model.matrix(p_fits[[k]]@modelObj@model, data=df[i,]), 
-                             #            p_fits[[k]]@fitObj$coefficients)) * 
-                             #     gprime2(model.matrix(p_fits[[k]]@modelObj@model, data=df[i,]), p_fits[[k]]@fitObj$coefficients)
-                             # }
-                      )
+                        lapply(X=1L:nrow(df), FUN = function(i) k_ind[i] * 
+                                 gprime(dfkm[i,,drop = FALSE], 
+                                        p_fits[[k]]@fitObj$coefficients) %*% 
+                                 t(gprime(dfkm[i,,drop = FALSE], 
+                                          p_fits[[k]]@fitObj$coefficients)) 
+                               # remove because expectation is mean 0, and adds computational burden. 
+                               # - (df[i,'kappa']>=k) * {
+                               #   drop(df[,paste0('a',k)][i] - 
+                               #          g(model.matrix(p_fits[[k]]@modelObj@model, data=df[i,]), 
+                               #            p_fits[[k]]@fitObj$coefficients)) * 
+                               #     gprime2(model.matrix(p_fits[[k]]@modelObj@model, data=df[i,]), p_fits[[k]]@fitObj$coefficients)
+                               # }
+                        )
     )
     # this should be block diagonal
     if (k == 1){
@@ -82,6 +86,7 @@ getdPsiPi <- function(df, p_fits){
       dpsi.pi <- Matrix::bdiag(dpsi.pi, dpsi.pi_k)
     }
   }
+  return(-dpsi.pi)
   return(-dpsi.pi)
 }
 
