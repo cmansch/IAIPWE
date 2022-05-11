@@ -28,6 +28,7 @@ getdPsiVdPi <- function(df, pis, nus, regime_ind, p_fits, k, qs){
     # now we get all the augmentation terms
     # the furthest stage reached with consistency is given as
     kr <- floor((r+1)/2)
+    dfkm <- model.matrix(p_fits[[k]]@modelObj@model, data=df)
     # now consider the formation of the augmentation terms
     
     # note that lambdar is the pr(R=r|R \geq r)
@@ -67,7 +68,7 @@ getdPsiVdPi <- function(df, pis, nus, regime_ind, p_fits, k, qs){
     if ((kr == k) & (r %% 2 == 1)){
       dpsi.lambdar.dpik <- lapply(X=1L:nrow(df), FUN = function(i) (df[i,'kappa']>=kr) * 
                                     (1-2*Ck[i,kr]) * (2*df[i,paste0('a',kr)] -1) *
-                                    gprime(model.matrix(p_fits[[k]]@modelObj@model, data=df[i,]), 
+                                    gprime(dfkm[i,,drop = FALSE], 
                                            p_fits[[k]]@fitObj$coefficients) 
       )
     } else{
@@ -77,19 +78,19 @@ getdPsiVdPi <- function(df, pis, nus, regime_ind, p_fits, k, qs){
     if (r == 1){
       dpsi.kr.dpik <- lapply(X=1L:nrow(df), FUN = function(i) (df[i,'kappa']>=kr) * 
                                (2*Ck[i,k]-1) * (2*df[i,paste0('a',k)] -1) *
-                               gprime(model.matrix(p_fits[[k]]@modelObj@model, data=df[i,]), 
+                               gprime(dfkm[i,,drop = FALSE], 
                                       p_fits[[k]]@fitObj$coefficients) ) 
     } else{
       dpsi.kr.dpik <- lapply(X=1L:nrow(df), FUN = function(i) (df[i,'kappa']>=kr) * 
                                (Kr[i] / pis[i,k]) * (2*Ck[i,k]-1) * (2*df[i,paste0('a',k)] -1) *
-                               gprime(model.matrix(p_fits[[k]]@modelObj@model, data=df[i,]), 
+                               gprime(dfkm[i,,drop = FALSE], 
                                       p_fits[[k]]@fitObj$coefficients) ) 
     } 
     # this is only the rth augmentation term
     dOneAugTerms.dpik <- lapply(X=1L:nrow(df), FUN = function(i)  ( (Kr[i] * (-dpsi.lambdar.dpik[[i]] * (R[i] >= r) ) - 
-                                                                    ((R[i] == r) - (R[i] >= r)*lambdar[i]) * dpsi.kr.dpik[[i]] ) / 
-                                                                   (Kr[i]^2) ) *
-                               qs$mod_regime_vhats[i,kr] )
+                                                                       ((R[i] == r) - (R[i] >= r)*lambdar[i]) * dpsi.kr.dpik[[i]] ) / 
+                                                                      (Kr[i]^2) ) *
+                                  qs$mod_regime_vhats[i,kr] )
     # add the rth augmentation term to the list
     dAugTerms.dpik <- lapply(X=1L:nrow(df), FUN = function(i) dAugTerms.dpik[[i]] + dOneAugTerms.dpik[[i]])
   } # end for loop  
