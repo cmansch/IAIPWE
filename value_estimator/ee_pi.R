@@ -20,13 +20,19 @@ getPsiPi <- function(df, p_fits){
   psi.pi <- c()
   for (k in c(1:length(p_fits))){
     
+    k_ind <- (df[,'kappa']>=k)*1
+    dfkm <- model.matrix(p_fits[[k]]@modelObj@model, data=df)
+    
     psii <- makeNice(
       lapply(X=1L:nrow(df), FUN = function(i) drop(df[,paste0('a',k)][i] - 
-                                                     g(model.matrix(p_fits[[k]]@modelObj@model, data=df[i,]), 
-                                                       p_fits[[k]]@fitObj$coefficients)) * (df[i,'kappa']>=k)   *
-               gprime(model.matrix(p_fits[[k]]@modelObj@model, data=df[i,]), p_fits[[k]]@fitObj$coefficients)
+                                                     g(dfkm[i,,drop = FALSE], 
+                                                       p_fits[[k]]@fitObj$coefficients)) *
+               k_ind[i] *
+               gprime(dfkm[i,,drop = FALSE], p_fits[[k]]@fitObj$coefficients)
       )
     )
+    
+    
     psi.pi <- cbind(psi.pi, psii) 
   }
   return(psi.pi)
