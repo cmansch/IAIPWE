@@ -40,4 +40,4 @@ regimes <- list(c(0,0), c(0,1), c(1,0), c(1,1))
 regime_dfs <- regimelist(embRegimes = regimes,
                            dat = df)
 
-estimateAllMethods(df, regime_dfs, regimes, q_list, pi_list, 700, TRUE)
+IAIPW(df, pi_list, q_list, regime_dfs, feasibleSetsIndicator=TRUE, t_s=500)
