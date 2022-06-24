@@ -26,14 +26,21 @@ getAn <- function(df, pis, p_fits, nus, q_all, values, regime_all, dfs, feasible
   # the getPsiBeta should do this for all of the embedded regimes 
   # the regime_all is added because now we deal with different design matrices
   # this is NOT -dpsi.beta/dbeta
-  dpsi.beta <- getdPsiBeta(df, q_all, regime_all, feasibleSetsIndicator)
-  
-  # get values ee derivatives
-  dpsi.v <- getdPsiV(df, pis, nus, regime_all, p_fits, q_all, feasibleSetsIndicator)
+  if (length(q_all) != 0){
+    dpsi.beta <- getdPsiBeta(df, q_all, regime_all, feasibleSetsIndicator)
+    # get values ee derivatives
+    dpsi.v <- getdPsiV(df, pis, nus, regime_all, p_fits, q_all, feasibleSetsIndicator)
+  } else{
+    dpsi.v <- getdPsiV_ipw(df, pis, nus, regime_all, p_fits, q_all, feasibleSetsIndicator)
+  }
   
   # create block diagonal matrix 
+  if (length(q_all) != 0){
+    dpsi.pi.nu.beta <- Matrix::bdiag(dpsi.pi, dpsi.nu, dpsi.beta)
+  } else{
+    dpsi.pi.nu.beta <- Matrix::bdiag(dpsi.pi, dpsi.nu)
+  }
   
-  dpsi.pi.nu.beta <- Matrix::bdiag(dpsi.pi, dpsi.nu, dpsi.beta)
   # divide matrix by the sample size nus$ns, 
   return (rbind(cbind(dpsi.pi.nu.beta,
               matrix(0, nrow=nrow(dpsi.pi.nu.beta), ncol=nrow(dpsi.v)) 

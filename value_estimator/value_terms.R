@@ -23,52 +23,57 @@ getVterms <- function(df, regime_ind, pis, qs, nus){
   rinfty <- df$y * (R == (2*K+1)) / (apply(pis, 1, prod) * nus$nu[[K+1]])
   Vterms[,2*K+1] <- rinfty
   
-  for (r in 1:(2*K)){
-    # now we get all the augmentation terms
-    # the furthest stage reached with consistency is given as
-    k <- floor((r+1)/2)
-    # now consider the formation of the augmentation terms
+  if (!is.null(qs)){
     
-    # note that lambdar is the pr(R=r|R \geq r)
-    # K(r) = Pr(R > r) = Pr(R >= r+1)
-    # We abuse the fact that I(R >=r) leads each augmentation term
-    # So, Pr(R>=r) = K(r-1)
-    # lambdar = [Pr(R=r) / Pr(R >= r)] = [Pr(R=r) / K(r-1)]
-    # Pr(R=r) is given in paper supplemental
-    # for odd r, this is the probability associated with NOT receiving regime 
-    # for even r, this is the probability associated with kappa=k
-    
-    # note that individuals have pi=99 if they did not make it to a stage due
-    # to time (kappa). Here, this can mean that some lambdar and Kr can take
-    # strange values. However, the ifelse term should take care of that because
-    
-    
-    if (r %% 2 == 1){
-      # odd r
-      lambdar <- ( (pis[,k]*(1-Ck[,k]) + (1-pis[,k])*Ck[,k]) )  
-      if (r==1){
-        Kr <- ( (pis[,k]*Ck[,k] + (1-pis[,k])*(1-Ck[,k])) )  
-      } else {
-      Kr <- apply(pis[,1:(k-1), drop = FALSE], 1, prod) * nus$nu[[k]] * 
-        ( (pis[,k]*Ck[,k] + (1-pis[,k])*(1-Ck[,k])) )  
+    for (r in 1:(2*K)){
+      # now we get all the augmentation terms
+      # the furthest stage reached with consistency is given as
+      k <- floor((r+1)/2)
+      # now consider the formation of the augmentation terms
+      
+      # note that lambdar is the pr(R=r|R \geq r)
+      # K(r) = Pr(R > r) = Pr(R >= r+1)
+      # We abuse the fact that I(R >=r) leads each augmentation term
+      # So, Pr(R>=r) = K(r-1)
+      # lambdar = [Pr(R=r) / Pr(R >= r)] = [Pr(R=r) / K(r-1)]
+      # Pr(R=r) is given in paper supplemental
+      # for odd r, this is the probability associated with NOT receiving regime 
+      # for even r, this is the probability associated with kappa=k
+      
+      # note that individuals have pi=99 if they did not make it to a stage due
+      # to time (kappa). Here, this can mean that some lambdar and Kr can take
+      # strange values. However, the ifelse term should take care of that because
+      
+      
+      if (r %% 2 == 1){
+        # odd r
+        lambdar <- ( (pis[,k]*(1-Ck[,k]) + (1-pis[,k])*Ck[,k]) )  
+        if (r==1){
+          Kr <- ( (pis[,k]*Ck[,k] + (1-pis[,k])*(1-Ck[,k])) )  
+        } else {
+          Kr <- apply(pis[,1:(k-1), drop = FALSE], 1, prod) * nus$nu[[k]] * 
+            ( (pis[,k]*Ck[,k] + (1-pis[,k])*(1-Ck[,k])) )  
+        }
+      } else{
+        # even r
+        # this is 0 for AIPW estimator 
+        lambdar <- (nus$nu[[k]] - nus$nu[[k+1]]) / nus$nu[[k]]
+        Kr <- apply(pis[,1:k, drop = FALSE], 1, prod) * nus$nu[[k+1]]
       }
-    } else{
-      # even r
-      # this is 0 for AIPW estimator 
-      lambdar <- (nus$nu[[k]] - nus$nu[[k+1]]) / nus$nu[[k]]
-      Kr <- apply(pis[,1:k, drop = FALSE], 1, prod) * nus$nu[[k+1]]
+      
+      # here the Q should be using the modified regimes
+      # first, make sure to only take the terms for which R >=r
+      augterm <- ifelse((R >= r), (((R == r) - lambdar) / Kr) * qs$mod_regime_vhats[,k], 0)
+      # next, correct for when Kr = 0 due to regime inconsistency at the current stage
+      # augterm <- ifelse(Ck[,k] == 0, 0, augterm)
+      
+      Vterms[,r] <- augterm
+      
+      # update Kr lag
+      Krlag1 <- Kr
     }
     
-    # here the Q should be using the modified regimes
-    # first, make sure to only take the terms for which R >=r
-    augterm <- ifelse((R >= r), (((R == r) - lambdar) / Kr) * qs$mod_regime_vhats[,k], 0)
-    # next, correct for when Kr = 0 due to regime inconsistency at the current stage
-    # augterm <- ifelse(Ck[,k] == 0, 0, augterm)
-    
-    Vterms[,r] <- augterm
-    
-    # update Kr lag
-    Krlag1 <- Kr
   }
+  
   return(Vterms)
 }

@@ -36,11 +36,18 @@ IAIPW <- function(df, pi_list, q_list, regime_all, feasibleSetsIndicator, t_s){
   # so the variance of \btheta is Vn / n
   
   # get all estimated parameters
-  estimatedParameters <- c(unlist(lapply(p_fits, function(x) x@fitObj$coefficients)), 
-    unlist(nus$nu),
-    getQcoefs(q_all),
-    values
-  )
+  if (is.null(q_list)){
+    estimatedParameters <- c(unlist(lapply(p_fits, function(x) x@fitObj$coefficients)), 
+                             unlist(nus$nu),
+                             values
+    )
+  } else{
+    estimatedParameters <- c(unlist(lapply(p_fits, function(x) x@fitObj$coefficients)), 
+                             unlist(nus$nu),
+                             getQcoefs(q_all),
+                             values
+    )  
+  }
   
   # unlist(lapply(q_all, function(y) unlist(lapply(y$q_fits, function(x) x@fitObj$coefficients)) ))
   
@@ -49,5 +56,8 @@ IAIPW <- function(df, pi_list, q_list, regime_all, feasibleSetsIndicator, t_s){
               'params' = estimatedParameters,
               'An' = An,
               'Bn' = Bn,
-              'nus' = nus))
+              'nus' = nus,
+              "q_all" = q_all,
+              "regime_all" = regime_all,
+              "dfs" = dfs))
 }

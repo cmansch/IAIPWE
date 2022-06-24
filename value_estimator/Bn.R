@@ -15,7 +15,11 @@ getBn <- function(df, p_fits, nus, q_all, dfs, values, feasibleSetsIndicator){
   
   # get psi beta for all regimes 
   # the getPsiBeta should do this for all of the embedded regimes 
-  psi.beta <- getPsiBeta(df, q_all, feasibleSetsIndicator)
+  if (length(q_all) != 0){
+    psi.beta <- getPsiBeta(df, q_all, feasibleSetsIndicator)
+  } else{
+    psi.beta <- NULL
+  }
   
   # get values
   psi.v <- getPsiV(dfs, values, (df$kappa > 0))

@@ -12,12 +12,16 @@ estimate_values <- function(df, q_list, regime_all, feasibleSetsIndicator,
   q_all <- list()
   L <- length(regime_all)
   for (ell in 1:L){
-    qs <- getQfits(df, q_list, regime_all[[ell]]$regime, feasibleSetsIndicator=feasibleSetsIndicator)
+    if (!is.null(q_list)){
+      qs <- getQfits(df, q_list, regime_all[[ell]]$regime, feasibleSetsIndicator=feasibleSetsIndicator)  
+    } else{
+      qs <- NULL
+    }
     vTerms <- getVterms(df, regime_all[[ell]]$regime_ind, pis, qs, nus)
     value <- sum(vTerms) / sum(df$kappa > 0)
     vTermDfs[[ell]] <- vTerms
     values <- c(values, value)
-    q_all[[ell]] <- qs
+    q_all[[ell]] <- qs  # if qs is null this will not assign anything
   }
   return(list('value' = values,
               'df' = vTermDfs,
