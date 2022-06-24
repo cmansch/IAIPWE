@@ -204,15 +204,12 @@ ofbound <- c(3.44, 2.43)
   
 N <- 284  # this is based on the effective sample size for the cancer trial. 
 
-# seed 7 rejects pocock, not OF
-# seed 17 rejects all
+## to generate your own sample, use the next line of code
+# df <- design_case_study(vp=3, n=N, seed=10)  # vp 3 allows the regimes to vary from 19.5 to 37.5
 
-df <- design_case_study(vp=3, n=N, seed=10)  # vp 3 allows the regimes to vary from 19.5 to 37.5
+df <- read.csv("./case_study_data.csv", row.names=1)
 regime_all <- regimelist_case_study(embRegimes = regimes,
                         dat = df)
-
-# save the df
-write.csv(df, paste0(filedir, "/case_study_data.csv"))
 
 # now get the estimates of the values
 t1_res <- IAIPW(df=df, pi_list=pi_list, q_list=q_list, regime_all=regime_all, 
@@ -261,32 +258,3 @@ sum(df$t1 <= t_s_list[[1]] )
 # get time saved if stopped early
 (max(df$t3) - 500) 
 (max(df$t3) - 500) / 7
-
-# test if the PCST-Full is better than brief 
-
-zscore1 <- sum(t1_sum$value * c(1,1,1,1,-1,-1,-1,-1))/4 / 
-  sqrt((c(1,1,1,1,-1,-1,-1,-1)/4) %*% t1_sum$variance %*% (c(1,1,1,1,-1,-1,-1,-1)/4) / 
-         t1_sum$n)
-# pvalue
-1-pnorm(zscore1)
-# point estimate
-diff1 <- sum(t1_sum$value * c(1,1,1,1,-1,-1,-1,-1)/4)
-# margin of error 
-me1 <- sqrt((c(1,1,1,1,-1,-1,-1,-1)/4) %*% t1_sum$variance %*% (c(1,1,1,1,-1,-1,-1,-1)/4) / 
-       t1_sum$n)
-# ci
-c(diff1 - qnorm(1-0.05/2)*me1, diff1 + qnorm(1-0.05/2)*me1)
-
-
-zscore2 <- sum(t2_sum$value * c(1,1,1,1,-1,-1,-1,-1))/4 / 
-  sqrt((c(1,1,1,1,-1,-1,-1,-1)/4) %*% t2_sum$variance %*% (c(1,1,1,1,-1,-1,-1,-1)/4) / 
-         t2_sum$n)
-# pvalue
-1-pnorm(zscore2)
-# point estimate
-diff2 <- sum(t2_sum$value * c(1,1,1,1,-1,-1,-1,-1)/4)
-# margin of error 
-me2 <- sqrt((c(1,1,1,1,-1,-1,-1,-1)/4) %*% t2_sum$variance %*% (c(1,1,1,1,-1,-1,-1,-1)/4) / 
-              t2_sum$n)
-# ci
-c(diff2 - qnorm(1-0.05/2)*me2, diff2 + qnorm(1-0.05/2)*me2)
