@@ -37,7 +37,7 @@ H0 <- delta
 # the added part is for the non mean zero covariates 
 HaltDelta <- c(10, 10, 10, 10, 0, 0, 0, 0)  # the numerator (V-H0) to be used in power calculations
 
-# t_s_list = list(500, TRUE)  # when to perform analyses, TRUE means do a final analyses
+t_s_list = list(500, TRUE)  # when to perform analyses, TRUE means do a final analyses
 feasibleSetsIndicator=FALSE
 
 
@@ -53,7 +53,7 @@ design_case_study <- function(vp, n, seed=1, s2=900, a1p=0.5, a2p=0.5, r2p = 0.5
   } else if (vp==3) {
     vpbeta <- c(1, c(0, 0.2, 0, 10, -10), c(1), c(0), c(-10, -5, -2), c(10, -2, 0))
   }
-  # # test vps
+  # test vps
   # a1 <- c(0,0,0,0,1,1,1,1)
   # r2 <- c(0,0,1,1,0,0,1,1)
   # a2 <- c(0,1,0,1,0,1,0,1)
@@ -117,8 +117,8 @@ design_case_study <- function(vp, n, seed=1, s2=900, a1p=0.5, a2p=0.5, r2p = 0.5
   # to enrollment process.
   # We multiple the process by 1000 to have the unit be 'days'.
   t1 <- round(runif(n, 0, 1), 3)*1000
-  t2 <- t1 + round(runif(n, min=35, max=57)) # move on between 5 and 8 weeks
-  t3 <- t2 + round(runif(n, min=35, max=57)) + round(runif(n, min=150, max=210))
+  t2 <- t1 + 56 # round(runif(n, min=35, max=57)) # move on between 5 and 8 weeks
+  t3 <- t2 + 126 # round(runif(n, min=35, max=57)) + round(runif(n, min=150, max=210))
   dat <- as.data.frame(cbind(round(red3, 1), round(x11), round(x12,1), x13, x14, x15, round(red2,1), round(x21,1), a1, a2, r2, t1, t2, t3))
   names(dat)[1] <- "y"
   names(dat)[2] <- "x11"
@@ -199,19 +199,39 @@ pi_list <- list(p1, p2)
 
 ### stopping boundaries ###
 #pocock bounds and OF bounds
-pbound <- c(2.67, 2.67)
-ofbound <- c(3.44, 2.43)
-  
+# IAIPW
+pbound <- c(2.66, 2.66)
+ofbound <- c(4.20, 2.43)
+
+# complete case AIPW
+pbound_aipw <- c(2.66, 2.66)
+ofbound_aipw <- c(4.30, 2.44)
+
+# complete case IPW
+pbound_ipw <- c(2.66, 2.66)
+ofbound_ipw <- c(4.30, 2.44)
+
 N <- 284  # this is based on the effective sample size for the cancer trial. 
 
-## to generate your own sample, use the next line of code
+# seed 7 rejects pocock, not OF
+# seed 17 rejects all
+
 # df <- design_case_study(vp=3, n=N, seed=10)  # vp 3 allows the regimes to vary from 19.5 to 37.5
+# # save the df
+# write.csv(df, paste0(filedir, "/case_study_data.csv"))
 
 df <- read.csv("./case_study_data.csv", row.names=1)
 regime_all <- regimelist_case_study(embRegimes = regimes,
                         dat = df)
 
-# now get the estimates of the values
+df_cc <- df[df$t3 <= 500,]
+regime_all_cc <- regimelist_case_study(embRegimes = regimes,
+                                    dat = df_cc)
+
+# save the df
+# write.csv(df, paste0(filedir, "/case_study_data.csv"))
+
+#### IAIPWE ####
 t1_res <- IAIPW(df=df, pi_list=pi_list, q_list=q_list, regime_all=regime_all, 
                 feasibleSetsIndicator=feasibleSetsIndicator, t_s=500) 
 t2_res <- IAIPW(df=df, pi_list=pi_list, q_list=q_list, regime_all=regime_all, 
@@ -258,3 +278,161 @@ sum(df$t1 <= t_s_list[[1]] )
 # get time saved if stopped early
 (max(df$t3) - 500) 
 (max(df$t3) - 500) / 7
+
+
+
+#### IPWE ####
+t1_resi <- IAIPW(df=df_cc, pi_list=pi_list, q_list=NULL, regime_all=regime_all_cc, 
+                feasibleSetsIndicator=feasibleSetsIndicator, t_s=500) 
+t2_resi <- IAIPW(df=df, pi_list=pi_list, q_list=NULL, regime_all=regime_all, 
+                feasibleSetsIndicator=feasibleSetsIndicator, t_s=max(df$t3)) 
+
+
+t1_sum <- unpack_IAIPW(t1_resi)
+z1 <- (t1_sum$value - delta) / t1_sum$se  # z-statistics
+
+t2_sum <- unpack_IAIPW(t2_resi)
+z2 <- (t2_sum$value - delta) / t2_sum$se  # z-statistics
+
+z1 > pbound[1]
+z1 > ofbound[1]
+
+z2 > pbound[2]
+z2 > ofbound[2]
+
+# table data
+cbind(1:8, round(t1_sum$value,1), round(t1_sum$se,1), round(z1,2), 
+      round(t2_sum$value,1), round(t2_sum$se,1), round(z2,2))
+# now get the z-statistics 
+sum(df$t1 <= t_s_list[[1]] ) / nrow(df)
+sum(df$t2 <= t_s_list[[1]] ) / nrow(df)
+sum(df$t3 <= t_s_list[[1]] ) / nrow(df)
+
+# get number of individuals
+max(df$t3)
+sum(df$t1 <= t_s_list[[1]] )
+
+# get time saved if stopped early
+(max(df$t3) - 500) 
+(max(df$t3) - 500) / 7
+
+
+#### AIPWE ####
+t1_resa <- IAIPW(df=df_cc, pi_list=pi_list, q_list=q_list, regime_all=regime_all_cc, 
+                feasibleSetsIndicator=feasibleSetsIndicator, t_s=500) 
+t2_resa <- IAIPW(df=df, pi_list=pi_list, q_list=q_list, regime_all=regime_all, 
+                feasibleSetsIndicator=feasibleSetsIndicator, t_s=max(df$t3)) 
+
+
+
+t1_sum <- unpack_IAIPW(t1_resa)
+z1 <- (t1_sum$value - delta) / t1_sum$se  # z-statistics
+
+t2_sum <- unpack_IAIPW(t2_resa)
+z2 <- (t2_sum$value - delta) / t2_sum$se  # z-statistics
+
+z1 > pbound[1]
+z1 > ofbound[1]
+
+z2 > pbound[2]
+z2 > ofbound[2]
+
+# table data
+cbind(1:8, round(t1_sum$value,1), round(t1_sum$se,1), round(z1,2), 
+      round(t2_sum$value,1), round(t2_sum$se,1), round(z2,2))
+# now get the z-statistics 
+sum(df$t1 <= t_s_list[[1]] ) / nrow(df)
+sum(df$t2 <= t_s_list[[1]] ) / nrow(df)
+sum(df$t3 <= t_s_list[[1]] ) / nrow(df)
+
+# get number of individuals
+max(df$t3)
+sum(df$t1 <= t_s_list[[1]] )
+
+# get time saved if stopped early
+(max(df$t3) - 500) 
+(max(df$t3) - 500) / 7
+
+
+
+
+
+#### look at ses
+
+t1_sum <- unpack_IAIPW(t1_res)
+t1_suma <- unpack_IAIPW(t1_resa)
+t1_sumi <- unpack_IAIPW(t1_resi)
+cbind(t1_sum$se, t1_suma$se, t1_sumi$se)  # not hugely more efficient?
+
+
+t2_sum <- unpack_IAIPW(t2_res)
+t2_suma <- unpack_IAIPW(t2_resa)
+t2_sumi <- unpack_IAIPW(t2_resi)
+cbind(t2_sum$se, t2_suma$se, t2_sumi$se)  # not hugely more efficient?
+
+z1 <- (t1_sum$value - delta) / t1_sum$se  # z-statistics
+z2 <- (t2_sum$value - delta) / t2_sum$se  # z-statistics
+z1a <- (t1_suma$value - delta) / t1_suma$se  # z-statistics
+z2a <- (t2_suma$value - delta) / t2_suma$se  # z-statistics
+z1i <- (t2_sumi$value - delta) / t1_sumi$se  # z-statistics
+z2i <- (t2_sumi$value - delta) / t2_sumi$se  # z-statistics
+
+out_table <- cbind(1:8, 
+      round(t1_sumi$value,1) / 10, round(t1_sumi$se,2), round(z1i, 2),
+      round(t1_suma$value,1) / 10, round(t1_suma$se,2), round(z1a, 2),
+      round(t1_sum$value,1) / 10, round(t1_sum$se,2), round(z1, 2),
+      round(t2_sumi$value,1) / 10, round(t2_sumi$se,2), round(z2i, 2),
+      round(t2_suma$value,1) / 10, round(t2_suma$se,2), round(z2a, 2),
+      round(t2_sum$value,1) / 10, round(t2_sum$se,2), round(z2, 2)
+)
+      
+
+out_table <- cbind(1:8, 
+      round(t1_sumi$value,1) / 10, round(t1_sumi$se,2),
+      round(t1_suma$value,1) / 10, round(t1_suma$se,2),
+      round(t1_sum$value,1) / 10, round(t1_sum$se,2),
+      round(t2_sumi$value,1) / 10, round(t2_sumi$se,2),
+      round(t2_suma$value,1) / 10, round(t2_suma$se,2),
+      round(t2_sum$value,1) / 10, round(t2_sum$se,2)
+)
+out_table
+apply(out_table, 1, paste, collapse=" & ")
+
+
+out_table <- cbind(1:8,
+      pbound[1], ofbound[1],
+      round(t1_sum$value,1) / 10, paste0("(", round(t1_sum$se,2), ")"), round(z1, 2),
+      pbound[2], ofbound[2],
+      round(t2_sum$value,1) / 10, paste0("(", round(t2_sum$se,2), ")"), round(z2, 2)
+)
+apply(out_table, 1, paste, collapse=" & ")
+
+
+# get number of individuals
+max(df$t3)
+sum(df$t1 <= t_s_list[[1]] ) / nrow(df)
+sum(df$t2 <= t_s_list[[1]] ) / nrow(df)
+sum(df$t3 <= t_s_list[[1]] ) / nrow(df)
+
+# get time saved if stopped early
+(max(df$t3) - 500) 
+(max(df$t3) - 500) / 7
+
+
+out_tablea <- cbind(1:8,
+                   pbound_aipw[1], ofbound_aipw[1],
+                   round(t1_suma$value,1) / 10, paste0("(", round(t1_suma$se,2), ")"), round(z1a, 2),
+                   pbound_aipw[2], ofbound_aipw[2],
+                   round(t2_suma$value,1) / 10, paste0("(", round(t2_suma$se,2), ")"), round(z2a, 2)
+)
+apply(out_tablea, 1, paste, collapse=" & ")
+
+
+
+out_tablei <- cbind(1:8,
+                    pbound_ipw[1], ofbound_ipw[1],
+                    round(t1_sumi$value,1) / 10, paste0("(", round(t1_sumi$se,2), ")"), round(z1i, 2),
+                    pbound_ipw[2], ofbound_ipw[2],
+                    round(t2_sumi$value,1) / 10, paste0("(", round(t2_sumi$se,2), ")"), round(z2i, 2)
+)
+apply(out_tablei, 1, paste, collapse=" & ")
