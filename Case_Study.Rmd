@@ -345,28 +345,3 @@ z2 <- (t2_sum$value - delta) / t2_sum$se  # z-statistics
 The information proportions can be checked using the standard errors obtained from the output. 
 Practicioners should remember that for small $n$, the information proportion may be smaller than expected based on the asymptotic distribution. 
 In such cases, the stopping boundaries are more conservative. 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
